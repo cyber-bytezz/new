@@ -1,0 +1,53 @@
+📧 Email Flow Technical Documentation
+1. Core Infrastructure & Servers
+The application uses Azure Communication Services (ACS) as the dedicated email delivery server.
+
+Service Provider: Microsoft Azure
+Protocol: Azure SDK (via HTTPS)
+Backend Framework: FastAPI (Python)
+Database: PostgreSQL (Stores interview details and tracking timestamps)
+2. Environment Variables (.env)
+The following keys must be configured in the .env file for the email flow to function:
+
+Variable	Description	Example/Value
+AZURE_COMMUNICATION_ENDPOINT	The Azure ACS resource endpoint.	https://<resource-name>.communication.azure.com/
+AZURE_COMMUNICATION_ACCESS_KEY	Secret key for Azure authentication.	Abc123... (Primary Key)
+AZURE_COMMUNICATION_MAIL	The verified "From" email address.	DoNotReply@hexaware.com
+FRONTEND_INTERVIEW_BASE_URL	Base URL used to generate candidate links.	https://aitalentquest.tensai.run
+3. Key Endpoints
+Backend (Internal Logic)
+Trigger Endpoint: POST /schedule
+File: 
+backend/app/routers/schedules.py
+Action: Receives interview payload, creates DB entries, and triggers the email service.
+Frontend (Candidate Landing)
+Interview Link: {FRONTEND_URL}/login?interview_id={ID}
+Sent inside the email button (START INTERVIEW).
+4. Logic Execution Flow
+Request: The Recruiter submits a schedule via the Dashboard.
+Service Layer: 
+create_schedule_service
+ (in 
+interview_schedule.py
+) generates a Schedules record and an Interviews record.
+Link Generation: 
+generate_interview_link
+ (in 
+email_utils.py
+) creates a secure URL for the candidate.
+Payload Preparation: 
+email_generator.py
+ injects candidate name, date, and link into an HTML/CSS template.
+Dispatch: The EmailClient from the azure-communication-email library sends the message using the AZURE_COMMUNICATION_ENDPOINT.
+Confirmation: On success, the backend records invitation_sent_at in the database to track delivery.
+5. File Architecture for Reference
+If you need to modify the logic, look here:
+
+Configuration: 
+backend/configs/email_config.yaml
+Email Templates: 
+backend/app/services/email_generator.py
+Scheduling Brain: 
+backend/app/services/interview_schedule.py
+Utility Functions: 
+backend/app/utils/email_utils.py
